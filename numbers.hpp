@@ -2,12 +2,14 @@
 
 #include "raylib.h"
 
-void drawOne(int startX, int startY, Color color);
-void drawTwo(int startX, int startY, Color color);
-void drawThree(int startX, int startY, Color color);
-void drawFour(int startX, int startY, Color color);
-void drawFive(int startX, int startY, Color color);
-void drawSix(int startX, int startY, Color color);
-void drawSeven(int startX, int startY, Color color);
-void drawEight(int startX, int startY, Color color);
-void drawNine(int startX, int startY, Color color);
+#include "constants.hpp"
+
+void drawOne(int startX, int startY);
+void drawTwo(int startX, int startY);
+void drawThree(int startX, int startY);
+void drawFour(int startX, int startY);
+void drawFive(int startX, int startY);
+void drawSix(int startX, int startY);
+void drawSeven(int startX, int startY);
+void drawEight(int startX, int startY);
+void drawNine(int startX, int startY);

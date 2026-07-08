@@ -3,17 +3,14 @@
 #include <iostream>
 #include <array>
 
+#include "constants.hpp"
 #include "numbers.hpp"
 
 int main() {
 
-    constexpr int screenWidthScalar { 25 };
-    constexpr int screenHeightScalar { 25 };
-    constexpr int separator { 20 };
+    InitWindow(SCREEN_WIDTH_TILES * TILE_WIDTH, SCREEN_HEIGHT_TILES * TILE_WIDTH, "My first window");
 
-    InitWindow(screenWidthScalar * separator, screenWidthScalar * separator, "My first window");
-
-    std::array<std::array<bool, screenWidthScalar>, screenHeightScalar> grid { };
+    std::array<std::array<bool, SCREEN_WIDTH_TILES>, SCREEN_HEIGHT_TILES> grid { };
 
 
     SetTargetFPS(30);
@@ -21,23 +18,24 @@ int main() {
     while (!WindowShouldClose()) {
         BeginDrawing();
 
-            ClearBackground(Color { WHITE });
+            ClearBackground(Color { GRAY });
+            
 
-            for (int i { }; i < screenHeightScalar; ++i) {
-                for (int j { }; j < screenWidthScalar; ++j) {
+            for (int i { }; i < SCREEN_HEIGHT_TILES; ++i) {
+                for (int j { }; j < SCREEN_WIDTH_TILES; ++j) {
                     std::cout << i << ", " << j << "\n";
 
                     if (grid[i][j]) {
-                        DrawRectangle(j * separator, i * separator, separator, separator, Color { BLUE });
-                    } else {
-                        DrawRectangleLines(j * separator, i * separator, separator, separator, Color { LIGHTGRAY });
+                        DrawRectangle(j * TILE_WIDTH, i * TILE_WIDTH, TILE_WIDTH, TILE_WIDTH, Color { BLUE });
                     }
+                    
+                    DrawRectangleLines(j * TILE_WIDTH, i * TILE_WIDTH, TILE_WIDTH, TILE_WIDTH, Color { BLACK });
                 }
             }
 
             if (IsMouseButtonPressed(0)) {
-                int y { GetMouseX() / separator };
-                int x { GetMouseY() / separator };
+                int y { GetMouseX() / TILE_WIDTH };
+                int x { GetMouseY() / TILE_WIDTH };
 
                 grid[x][y] = !grid[x][y];
             }
