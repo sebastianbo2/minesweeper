@@ -8,7 +8,7 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 find_package(raylib REQUIRED)
 
 # Define your executable and add source files
-add_executable(main main.cpp numbers.cpp)
+add_executable(main main.cpp draw.cpp)
 
 # Link raylib to your game executable
-target_link_libraries(${PROJECT_NAME} PRIVATE raylib)
+target_link_libraries(main PRIVATE raylib)

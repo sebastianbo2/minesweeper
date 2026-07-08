@@ -4,6 +4,8 @@
 
 #include "constants.hpp"
 
+void drawFlag(int startX, int startY);
+
 void drawOne(int startX, int startY);
 void drawTwo(int startX, int startY);
 void drawThree(int startX, int startY);
