@@ -33,7 +33,6 @@ void callDrawFunction(TileState state, int startX, int startY) {
         return;
     case bomb:
         // drawBomb(int startX, int startY); doesnt need to be called since bombs should be hidden
-        // drawNine(startX, startY);
         DrawRectangle(startX * TILE_WIDTH, startY * TILE_WIDTH, TILE_WIDTH, TILE_WIDTH, Color { ORANGE });
         return;
     case flag:
@@ -106,20 +105,21 @@ int main() {
 
             ClearBackground(GRAY);
 
-            DrawFPS(5, 5);
-            
-
             for (int i { }; i < SCREEN_HEIGHT_TILES; ++i) {
                 for (int j { }; j < SCREEN_WIDTH_TILES; ++j) {
-                    DrawRectangle(i * TILE_WIDTH, j * TILE_WIDTH, TILE_WIDTH - 1, TILE_WIDTH - 1, BLACK);
 
                     if (grid[i][j] != TileState::base) {
                         callDrawFunction(grid[i][j], j, i);
                     }
-                    
-                    // DrawRectangleLines(i * TILE_WIDTH, j * TILE_WIDTH, TILE_WIDTH - 1, TILE_WIDTH - 1, BLACK);
                 }
             }
+
+            for (int i { 1 }; i < SCREEN_HEIGHT_TILES; ++i) {
+                DrawLine(0, TILE_WIDTH * i, i * TILE_WIDTH + TILE_WIDTH * SCREEN_HEIGHT_TILES, TILE_WIDTH * i, BLACK);
+                DrawLine(TILE_WIDTH * i, 0, TILE_WIDTH * i, i * TILE_WIDTH + TILE_WIDTH * SCREEN_WIDTH_TILES, BLACK);
+            }
+
+            DrawFPS(5, 5);
 
         EndDrawing();
     }
