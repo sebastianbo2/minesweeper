@@ -23,6 +23,7 @@ enum class TileState : int {
     bomb,
     flag,
     revealed,
+    starting,
 };
 
 struct Tile { 
@@ -39,15 +40,14 @@ void callDrawFunction(TileState state, int startX, int startY) {
         return;
     case bomb:
         // drawBomb(int startX, int startY); doesnt need to be called since bombs should be hidden
-        DrawRectangle(startX * TILE_WIDTH, startY * TILE_WIDTH, TILE_WIDTH, TILE_WIDTH, ORANGE);
-        return;
+        return DrawRectangle(startX * TILE_WIDTH, startY * TILE_WIDTH, TILE_WIDTH, TILE_WIDTH, ORANGE);
     case flag:
-        drawFlag(startX, startY);
-        return;
+        return drawFlag(startX, startY);
+    case starting:
+        return DrawRectangle(startX * TILE_WIDTH, startY * TILE_WIDTH, TILE_WIDTH, TILE_WIDTH, GREEN);
     default:
-        DrawRectangle(startX * TILE_WIDTH, startY * TILE_WIDTH, TILE_WIDTH, TILE_WIDTH, GRAY);
-        drawNumber(static_cast<int>(state), startX, startY);
-        return;
+        DrawRectangle(startX * TILE_WIDTH, startY * TILE_WIDTH, TILE_WIDTH, TILE_WIDTH, DARKGRAY);
+        return drawNumber(static_cast<int>(state), startX, startY);
     }
 }
 
@@ -80,7 +80,8 @@ int addBombsToGrid(std::array<std::array<Tile, SCREEN_WIDTH_TILES>, SCREEN_HEIGH
     return bombCount;
 }
 
-void addNumsToGrid(std::array<std::array<Tile, SCREEN_WIDTH_TILES>, SCREEN_HEIGHT_TILES>& grid) {
+int addNumsToGrid(std::array<std::array<Tile, SCREEN_WIDTH_TILES>, SCREEN_HEIGHT_TILES>& grid) {
+    int count { 0 };
 
     for (int i { }; i < SCREEN_HEIGHT_TILES; ++i) {
         for (int j { }; j < SCREEN_WIDTH_TILES; ++j) {
@@ -96,17 +97,22 @@ void addNumsToGrid(std::array<std::array<Tile, SCREEN_WIDTH_TILES>, SCREEN_HEIGH
                 }
             }
 
+            if (counter == 0) count++;
+
             grid.data()[i].data()[j].mainState = TileState { counter };
         }
     }
 
+    return count;
 }
 
 void revealEmptyChain(std::array<std::array<Tile, SCREEN_WIDTH_TILES>, SCREEN_HEIGHT_TILES>& grid, int startX, int startY) {
 
     if (startX < 0 || startY < 0 || startX >= SCREEN_WIDTH_TILES || startY >= SCREEN_HEIGHT_TILES) return;
 
-    std::cout << startX << ", " << startY << "\n";
+    if (grid[startY][startX].displayState == TileState::flag) {
+        return;
+    }
 
     if (grid[startY][startX].mainState != TileState::base) {
         grid[startY][startX].displayState = grid[startY][startX].mainState;
@@ -115,11 +121,49 @@ void revealEmptyChain(std::array<std::array<Tile, SCREEN_WIDTH_TILES>, SCREEN_HE
 
     grid[startY][startX].displayState = TileState::revealed;
 
-    if (startX > 0 && grid[startY][startX - 1].displayState != TileState::revealed) revealEmptyChain(grid, startX - 1, startY);
-    if (startX < SCREEN_WIDTH_TILES - 1 && grid[startY][startX + 1].displayState != TileState::revealed) revealEmptyChain(grid, startX + 1, startY);
-    if (startY > 0 && grid[startY - 1][startX].displayState != TileState::revealed) revealEmptyChain(grid, startX, startY - 1);
-    if (startY < SCREEN_HEIGHT_TILES - 1 && grid[startY + 1][startX].displayState != TileState::revealed) revealEmptyChain(grid, startX, startY + 1);
+    bool test1 { false };
+    bool test2 { false };
+    bool test3 { false };
+    bool test4 { false };
 
+    if (startX > 0 && grid[startY][startX - 1].displayState != TileState::revealed) {
+        revealEmptyChain(grid, startX - 1, startY);
+        test1 = true;
+    }
+
+    if (startX < SCREEN_WIDTH_TILES - 1 && grid[startY][startX + 1].displayState != TileState::revealed) {
+        revealEmptyChain(grid, startX + 1, startY);
+        test2 = true;
+    }
+
+    if (startY > 0 && grid[startY - 1][startX].displayState != TileState::revealed) {
+        revealEmptyChain(grid, startX, startY - 1);
+        test3 = true;
+    }
+
+    if (startY < SCREEN_HEIGHT_TILES - 1 && grid[startY + 1][startX].displayState != TileState::revealed) {
+        revealEmptyChain(grid, startX, startY + 1);
+        test4 = true;
+    }
+    
+    if (test1 && test3) revealEmptyChain(grid, startX - 1, startY - 1);
+    if (test1 && test4) revealEmptyChain(grid, startX - 1, startY + 1);
+    if (test2 && test3) revealEmptyChain(grid, startX + 1, startY - 1);
+    if (test2 && test4) revealEmptyChain(grid, startX + 1, startY + 1);
+}
+
+void addStartingPointToGrid(std::array<std::array<Tile, SCREEN_WIDTH_TILES>, SCREEN_HEIGHT_TILES>& grid, int startingPoint) {
+
+    for (auto& row : grid) {
+        for (auto& tile : row) {
+            if (tile.mainState != TileState::base) continue;
+            if (startingPoint == 0) {
+                tile.displayState = TileState::starting;
+            }
+
+            --startingPoint;
+        } 
+    }
 }
 
 int main() {
@@ -130,7 +174,10 @@ int main() {
 
     addBombsToGrid(grid);
 
-    addNumsToGrid(grid);
+    const int startingPointCount { addNumsToGrid(grid) };
+    const int startingPoint { Random::get(0, startingPointCount - 1) };
+
+    addStartingPointToGrid(grid, startingPoint);
 
     InitWindow(SCREEN_WIDTH_TILES * TILE_WIDTH, SCREEN_HEIGHT_TILES * TILE_WIDTH, "My first window");
 
@@ -142,7 +189,7 @@ int main() {
             int x { GetMouseX() / TILE_WIDTH };
             int y { GetMouseY() / TILE_WIDTH };
 
-            if (grid[y][x].displayState == TileState::base) {
+            if (grid[y][x].displayState == TileState::base or grid[y][x].displayState == TileState::starting) {
                 grid[y][x].displayState = grid[y][x].mainState != TileState::base
                 ? grid[y][x].mainState
                 : (revealEmptyChain(grid, x, y), TileState::revealed);
@@ -164,7 +211,7 @@ int main() {
 
         BeginDrawing();
 
-            ClearBackground(LIGHTGRAY);
+            ClearBackground(GRAY);
 
             for (int i { }; i < SCREEN_HEIGHT_TILES; ++i) {
                 for (int j { }; j < SCREEN_WIDTH_TILES; ++j) {
