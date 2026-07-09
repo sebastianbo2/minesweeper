@@ -22,6 +22,7 @@ enum class TileState : int {
     nine,
     bomb,
     flag,
+    revealed,
 };
 
 struct Tile { 
@@ -38,12 +39,13 @@ void callDrawFunction(TileState state, int startX, int startY) {
         return;
     case bomb:
         // drawBomb(int startX, int startY); doesnt need to be called since bombs should be hidden
-        DrawRectangle(startX * TILE_WIDTH, startY * TILE_WIDTH, TILE_WIDTH, TILE_WIDTH, Color { ORANGE });
+        DrawRectangle(startX * TILE_WIDTH, startY * TILE_WIDTH, TILE_WIDTH, TILE_WIDTH, ORANGE);
         return;
     case flag:
         drawFlag(startX, startY);
         return;
     default:
+        DrawRectangle(startX * TILE_WIDTH, startY * TILE_WIDTH, TILE_WIDTH, TILE_WIDTH, GRAY);
         drawNumber(static_cast<int>(state), startX, startY);
         return;
     }
@@ -100,6 +102,26 @@ void addNumsToGrid(std::array<std::array<Tile, SCREEN_WIDTH_TILES>, SCREEN_HEIGH
 
 }
 
+void revealEmptyChain(std::array<std::array<Tile, SCREEN_WIDTH_TILES>, SCREEN_HEIGHT_TILES>& grid, int startX, int startY) {
+
+    if (startX < 0 || startY < 0 || startX >= SCREEN_WIDTH_TILES || startY >= SCREEN_HEIGHT_TILES) return;
+
+    std::cout << startX << ", " << startY << "\n";
+
+    if (grid[startY][startX].mainState != TileState::base) {
+        grid[startY][startX].displayState = grid[startY][startX].mainState;
+        return;
+    }
+
+    grid[startY][startX].displayState = TileState::revealed;
+
+    if (startX > 0 && grid[startY][startX - 1].displayState != TileState::revealed) revealEmptyChain(grid, startX - 1, startY);
+    if (startX < SCREEN_WIDTH_TILES - 1 && grid[startY][startX + 1].displayState != TileState::revealed) revealEmptyChain(grid, startX + 1, startY);
+    if (startY > 0 && grid[startY - 1][startX].displayState != TileState::revealed) revealEmptyChain(grid, startX, startY - 1);
+    if (startY < SCREEN_HEIGHT_TILES - 1 && grid[startY + 1][startX].displayState != TileState::revealed) revealEmptyChain(grid, startX, startY + 1);
+
+}
+
 int main() {
     //state variables
     bool INPUTS_DISABLED { false };
@@ -121,7 +143,9 @@ int main() {
             int y { GetMouseY() / TILE_WIDTH };
 
             if (grid[y][x].displayState == TileState::base) {
-                grid[y][x].displayState = grid[y][x].mainState;
+                grid[y][x].displayState = grid[y][x].mainState != TileState::base
+                ? grid[y][x].mainState
+                : (revealEmptyChain(grid, x, y), TileState::revealed);
             }
         }
 
@@ -140,7 +164,7 @@ int main() {
 
         BeginDrawing();
 
-            ClearBackground(GRAY);
+            ClearBackground(LIGHTGRAY);
 
             for (int i { }; i < SCREEN_HEIGHT_TILES; ++i) {
                 for (int j { }; j < SCREEN_WIDTH_TILES; ++j) {
