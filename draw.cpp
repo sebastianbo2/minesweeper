@@ -46,6 +46,31 @@ void drawFlag(int startX, int startY) {
     }
 }
 
+void drawNumber(int number, int startX, int startY) {
+    switch (number) {
+    case 1:
+        return drawOne(startX, startY);
+    case 2:
+        return drawTwo(startX, startY);
+    case 3:
+        return drawThree(startX, startY);
+    case 4:
+        return drawFour(startX, startY);
+    case 5:
+        return drawFive(startX, startY);
+    case 6:
+        return drawSix(startX, startY);
+    case 7:
+        return drawSeven(startX, startY);
+    case 8:
+        return drawEight(startX, startY);
+    case 9:
+        return drawNine(startX, startY);
+    default:
+        return;
+    }
+}
+
 void drawOne(int startX, int startY) {
     DrawText("1", (startX * TILE_WIDTH) + NUMBER_OFFSET, (startY * TILE_WIDTH) + 3, 28, Color { SKYBLUE });
 }

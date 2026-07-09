@@ -24,6 +24,11 @@ enum class TileState : int {
     flag,
 };
 
+struct Tile { 
+    TileState mainState { TileState::base };
+    TileState displayState { TileState::base };
+};
+
 void callDrawFunction(TileState state, int startX, int startY) {
     using enum TileState;
 
@@ -39,12 +44,12 @@ void callDrawFunction(TileState state, int startX, int startY) {
         drawFlag(startX, startY);
         return;
     default:
-        // drawNumber(static_cast<int>(state), startX, startY);
+        drawNumber(static_cast<int>(state), startX, startY);
         return;
     }
 }
 
-int addBombsToGrid(std::array<std::array<TileState, SCREEN_WIDTH_TILES>, SCREEN_HEIGHT_TILES>& grid) {
+int addBombsToGrid(std::array<std::array<Tile, SCREEN_WIDTH_TILES>, SCREEN_HEIGHT_TILES>& grid) {
     constexpr static double percentage { 0.2 };
     int bombCount { static_cast<int>(percentage * TILE_COUNT) };
 
@@ -57,49 +62,81 @@ int addBombsToGrid(std::array<std::array<TileState, SCREEN_WIDTH_TILES>, SCREEN_
 
         for (auto& row : grid) {
             for (auto& tile : row) {
-                if (tile != TileState::bomb) {
+                if (tile.mainState != TileState::bomb) {
                     idx--;
                     if (idx < 1) {
-                        tile = TileState::bomb;
+                        tile.mainState = TileState::bomb;
                         goto end;
                     }
                 }
             }
         }
 
-        end:
-
+    end:
     }
 
     return bombCount;
 }
 
-int main() {
-    static std::array<std::array<TileState, SCREEN_WIDTH_TILES>, SCREEN_HEIGHT_TILES> grid {};
+void addNumsToGrid(std::array<std::array<Tile, SCREEN_WIDTH_TILES>, SCREEN_HEIGHT_TILES>& grid) {
 
-    for (auto i { 0uz }; i < grid.size(); ++i) {
-        for (auto j { 0uz }; j < grid[i].size(); ++j) {
-            grid[i][j] = TileState::base;
+    for (int i { }; i < SCREEN_HEIGHT_TILES; ++i) {
+        for (int j { }; j < SCREEN_WIDTH_TILES; ++j) {
+            if (grid.data()[i].data()[j].mainState != TileState::base) continue;
+
+            int counter { 0 };
+
+            for (int a { i - 1}; a < i + 2; ++a) {
+                for (int b { j - 1 }; b < j + 2; ++b) {
+                    if (a < 0 || b < 0 || a >= SCREEN_HEIGHT_TILES || b >= SCREEN_WIDTH_TILES) continue;
+
+                    if (grid.data()[a].data()[b].mainState == TileState::bomb) ++counter;
+                }
+            }
+
+            grid.data()[i].data()[j].mainState = TileState { counter };
         }
     }
 
+}
+
+int main() {
+    //state variables
+    bool INPUTS_DISABLED { false };
+
+    static std::array<std::array<Tile, SCREEN_WIDTH_TILES>, SCREEN_HEIGHT_TILES> grid {};
+
     addBombsToGrid(grid);
+
+    addNumsToGrid(grid);
 
     InitWindow(SCREEN_WIDTH_TILES * TILE_WIDTH, SCREEN_HEIGHT_TILES * TILE_WIDTH, "My first window");
 
     SetTargetFPS(60);
 
     while (!WindowShouldClose()) {
+        if (INPUTS_DISABLED) goto drawing;
+        if (IsMouseButtonPressed(0)) {
+            int x { GetMouseX() / TILE_WIDTH };
+            int y { GetMouseY() / TILE_WIDTH };
+
+            if (grid[y][x].displayState == TileState::base) {
+                grid[y][x].displayState = grid[y][x].mainState;
+            }
+        }
+
         if (IsMouseButtonPressed(1)) {
                 int x { GetMouseX() / TILE_WIDTH };
                 int y { GetMouseY() / TILE_WIDTH };
 
-                if (grid[y][x] == TileState::base) {
-                    grid[y][x] = TileState::flag;
-                } else if (grid[y][x] == TileState::flag) {
-                    grid[y][x] = TileState::base;
+                if (grid[y][x].displayState == TileState::base) {
+                    grid[y][x].displayState = TileState::flag;
+                } else if (grid[y][x].displayState == TileState::flag) {
+                    grid[y][x].displayState = TileState::base;
                 }
-            }
+        }
+
+    drawing:
 
         BeginDrawing();
 
@@ -108,8 +145,8 @@ int main() {
             for (int i { }; i < SCREEN_HEIGHT_TILES; ++i) {
                 for (int j { }; j < SCREEN_WIDTH_TILES; ++j) {
 
-                    if (grid[i][j] != TileState::base) {
-                        callDrawFunction(grid[i][j], j, i);
+                    if (grid[i][j].displayState != TileState::base) {
+                        callDrawFunction(grid[i][j].displayState, j, i);
                     }
                 }
             }
