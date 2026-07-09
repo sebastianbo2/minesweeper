@@ -9,6 +9,10 @@
 #include "constants.hpp"
 #include "draw.hpp"
 
+namespace GameState {
+    bool INPUTS_DISABLED { false };
+} // namespace GameState
+
 enum class TileState : int {
     base,
     one,
@@ -31,6 +35,8 @@ struct Tile {
     TileState displayState { TileState::base };
 };
 
+void revealBombs(std::array<std::array<Tile, SCREEN_WIDTH_TILES>, SCREEN_HEIGHT_TILES>& grid);
+
 void callDrawFunction(TileState state, int startX, int startY) {
     using enum TileState;
 
@@ -49,6 +55,19 @@ void callDrawFunction(TileState state, int startX, int startY) {
         DrawRectangle(startX * TILE_WIDTH, startY * TILE_WIDTH, TILE_WIDTH, TILE_WIDTH, DARKGRAY);
         return drawNumber(static_cast<int>(state), startX, startY);
     }
+}
+
+void revealEmptyChain(std::array<std::array<Tile, SCREEN_WIDTH_TILES>, SCREEN_HEIGHT_TILES>& grid, int startX, int startY);
+
+void clearTile(std::array<std::array<Tile, SCREEN_WIDTH_TILES>, SCREEN_HEIGHT_TILES>& grid, int startX, int startY) {
+    if (grid[startY][startX].mainState == TileState::bomb) {
+        GameState::INPUTS_DISABLED = true;
+        revealBombs(grid);
+    }
+
+    grid[startY][startX].displayState = grid[startY][startX].mainState != TileState::base
+                ? grid[startY][startX].mainState
+                : (revealEmptyChain(grid, startX, startY), TileState::revealed);
 }
 
 int addBombsToGrid(std::array<std::array<Tile, SCREEN_WIDTH_TILES>, SCREEN_HEIGHT_TILES>& grid) {
@@ -104,6 +123,17 @@ int addNumsToGrid(std::array<std::array<Tile, SCREEN_WIDTH_TILES>, SCREEN_HEIGHT
     }
 
     return count;
+}
+
+void revealBombs(std::array<std::array<Tile, SCREEN_WIDTH_TILES>, SCREEN_HEIGHT_TILES>& grid) {
+    for (int y { }; y < SCREEN_HEIGHT_TILES; ++y) {
+        for (int x { }; x < SCREEN_WIDTH_TILES; ++x) {
+            std::cout << y << ", " << x << "\n";
+            if (grid[y][x].mainState == TileState::bomb) {
+                grid[y][x].displayState = TileState::bomb;
+            }
+        }
+    }
 }
 
 void revealEmptyChain(std::array<std::array<Tile, SCREEN_WIDTH_TILES>, SCREEN_HEIGHT_TILES>& grid, int startX, int startY) {
@@ -176,20 +206,14 @@ void quickClear(std::array<std::array<Tile, SCREEN_WIDTH_TILES>, SCREEN_HEIGHT_T
             if (grid.data()[a].data()[b].displayState == TileState::flag) ++counter;
         }
     }
-    
-    std::cout << counter << ", " << static_cast<int>(grid[startY][startX].mainState) << "\n";
-    std::cout << startX << ", " << startY << "\n";
 
     if (TileState { counter } == grid[startY][startX].mainState) {
         for (int a { startY - 1}; a < startY + 2; ++a) {
             for (int b { startX - 1 }; b < startX + 2; ++b) {
                 if (a < 0 || b < 0 || a >= SCREEN_HEIGHT_TILES || b >= SCREEN_WIDTH_TILES) continue;
+                if (grid[a][b].displayState == TileState::flag) continue;
 
-                if (grid.data()[a].data()[b].displayState == TileState::base) {
-                    grid[a][b].displayState = grid[a][b].mainState != TileState::base
-                    ? grid[a][b].mainState
-                    : (revealEmptyChain(grid, b, a), TileState::revealed);
-                }
+                clearTile(grid, b, a);
             }
         }
     }
@@ -197,7 +221,6 @@ void quickClear(std::array<std::array<Tile, SCREEN_WIDTH_TILES>, SCREEN_HEIGHT_T
 
 int main() {
     //state variables
-    bool INPUTS_DISABLED { false };
 
     static std::array<std::array<Tile, SCREEN_WIDTH_TILES>, SCREEN_HEIGHT_TILES> grid {};
 
@@ -213,17 +236,14 @@ int main() {
     SetTargetFPS(60);
 
     while (!WindowShouldClose()) {
-        if (INPUTS_DISABLED) goto drawing;
+        if (GameState::INPUTS_DISABLED) goto drawing;
         if (IsMouseButtonPressed(0)) {
             int x { GetMouseX() / TILE_WIDTH };
             int y { GetMouseY() / TILE_WIDTH };
 
             if (grid[y][x].displayState == TileState::base or grid[y][x].displayState == TileState::starting) {
-                grid[y][x].displayState = grid[y][x].mainState != TileState::base
-                ? grid[y][x].mainState
-                : (revealEmptyChain(grid, x, y), TileState::revealed);
+                clearTile(grid, x, y);
             } else if (grid[y][x].displayState >= TileState::one && grid[y][x].displayState <= TileState::nine) {
-                std::cout << "Checking...\n";
                 quickClear(grid, x, y);
             }
         }
