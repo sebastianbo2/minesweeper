@@ -166,6 +166,35 @@ void addStartingPointToGrid(std::array<std::array<Tile, SCREEN_WIDTH_TILES>, SCR
     }
 }
 
+void quickClear(std::array<std::array<Tile, SCREEN_WIDTH_TILES>, SCREEN_HEIGHT_TILES>& grid, int startX, int startY) {
+    int counter { 0 };
+
+    for (int a { startY - 1}; a < startY + 2; ++a) {
+        for (int b { startX - 1 }; b < startX + 2; ++b) {
+            if (a < 0 || b < 0 || a >= SCREEN_HEIGHT_TILES || b >= SCREEN_WIDTH_TILES) continue;
+
+            if (grid.data()[a].data()[b].displayState == TileState::flag) ++counter;
+        }
+    }
+    
+    std::cout << counter << ", " << static_cast<int>(grid[startY][startX].mainState) << "\n";
+    std::cout << startX << ", " << startY << "\n";
+
+    if (TileState { counter } == grid[startY][startX].mainState) {
+        for (int a { startY - 1}; a < startY + 2; ++a) {
+            for (int b { startX - 1 }; b < startX + 2; ++b) {
+                if (a < 0 || b < 0 || a >= SCREEN_HEIGHT_TILES || b >= SCREEN_WIDTH_TILES) continue;
+
+                if (grid.data()[a].data()[b].displayState == TileState::base) {
+                    grid[a][b].displayState = grid[a][b].mainState != TileState::base
+                    ? grid[a][b].mainState
+                    : (revealEmptyChain(grid, b, a), TileState::revealed);
+                }
+            }
+        }
+    }
+}
+
 int main() {
     //state variables
     bool INPUTS_DISABLED { false };
@@ -193,6 +222,9 @@ int main() {
                 grid[y][x].displayState = grid[y][x].mainState != TileState::base
                 ? grid[y][x].mainState
                 : (revealEmptyChain(grid, x, y), TileState::revealed);
+            } else if (grid[y][x].displayState >= TileState::one && grid[y][x].displayState <= TileState::nine) {
+                std::cout << "Checking...\n";
+                quickClear(grid, x, y);
             }
         }
 
