@@ -28,6 +28,7 @@ enum class TileState : int {
     flag,
     revealed,
     starting,
+    highlighted,
 };
 
 struct Tile { 
@@ -203,6 +204,9 @@ void quickClear(std::array<std::array<Tile, SCREEN_WIDTH_TILES>, SCREEN_HEIGHT_T
         for (int b { startX - 1 }; b < startX + 2; ++b) {
             if (a < 0 || b < 0 || a >= SCREEN_HEIGHT_TILES || b >= SCREEN_WIDTH_TILES) continue;
 
+            if (grid.data()[a].data()[b].displayState == TileState::highlighted) {
+                grid.data()[a].data()[b].displayState = TileState::base;
+            }
             if (grid.data()[a].data()[b].displayState == TileState::flag) ++counter;
         }
     }
@@ -237,7 +241,7 @@ int main() {
 
     while (!WindowShouldClose()) {
         if (GameState::INPUTS_DISABLED) goto drawing;
-        if (IsMouseButtonPressed(0)) {
+        if (IsMouseButtonReleased(0)) {
             int x { GetMouseX() / TILE_WIDTH };
             int y { GetMouseY() / TILE_WIDTH };
 
@@ -248,7 +252,7 @@ int main() {
             }
         }
 
-        if (IsMouseButtonPressed(1)) {
+        if (IsMouseButtonReleased(1)) {
                 int x { GetMouseX() / TILE_WIDTH };
                 int y { GetMouseY() / TILE_WIDTH };
 
@@ -264,6 +268,23 @@ int main() {
         BeginDrawing();
 
             ClearBackground(GRAY);
+
+        if (IsMouseButtonDown(0)) {
+            int x { GetMouseX() / TILE_WIDTH };
+            int y { GetMouseY() / TILE_WIDTH };
+
+            if (grid[y][x].displayState >= TileState::one && grid[y][x].displayState <= TileState::nine) {
+                for (int a { y - 1}; a < y + 2; ++a) {
+                    for (int b { x - 1 }; b < x + 2; ++b) {
+                        if (a < 0 || b < 0 || a >= SCREEN_HEIGHT_TILES || b >= SCREEN_WIDTH_TILES) continue;
+                        if (grid[a][b].displayState != TileState::base) continue;
+                        callDrawFunction(TileState::revealed, b, a);
+                    }
+                }
+            } else if (grid[y][x].displayState == TileState::base) {
+                callDrawFunction(TileState::revealed, x, y);
+            }
+        }
 
             for (int i { }; i < SCREEN_HEIGHT_TILES; ++i) {
                 for (int j { }; j < SCREEN_WIDTH_TILES; ++j) {
