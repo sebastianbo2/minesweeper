@@ -1,3 +1,5 @@
+help too many segfaults when playing (80% chance u wont get to finish ur game)
+
 windows :
 
 ```bash
